@@ -26,3 +26,5 @@ export type {
   ScoutToolResult,
   ScoutUsage,
 } from './types.js';
+export { VertexGeminiAdapter } from './vertex.js';
+export type { VertexGeminiAdapterOptions } from './vertex.js';

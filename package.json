@@ -3,26 +3,26 @@
   "version": "0.1.0",
   "description": "Provider-neutral Scout agent loop with application-owned tools and a Vertex Gemini adapter.",
   "type": "module",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./vertex": {
-      "types": "./src/vertex.ts",
-      "import": "./src/vertex.ts",
-      "default": "./src/vertex.ts"
+      "types": "./dist/vertex.d.ts",
+      "import": "./dist/vertex.js",
+      "default": "./dist/vertex.js"
     }
   },
   "files": [
-    "src",
+    "dist",
     "README.md"
   ],
   "scripts": {
-    "build": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
