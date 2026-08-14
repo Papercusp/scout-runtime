@@ -65,13 +65,18 @@ export interface ScoutToolResult<TAppEvent> {
   ok?: boolean;
 }
 
+export type ScoutToolExecution<TAppEvent> =
+  | ScoutToolResult<TAppEvent>
+  | Promise<ScoutToolResult<TAppEvent>>
+  | AsyncGenerator<TAppEvent, ScoutToolResult<TAppEvent>, void>;
+
 export interface ScoutTool<TContext, TAppEvent> {
   definition: ScoutToolDefinition;
   execute(
     args: JsonObject,
     context: TContext,
     call: ScoutToolCall,
-  ): Promise<ScoutToolResult<TAppEvent>> | ScoutToolResult<TAppEvent>;
+  ): ScoutToolExecution<TAppEvent>;
 }
 
 export interface ScoutRuntimeHooks<TContext> {

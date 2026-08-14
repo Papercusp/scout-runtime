@@ -96,6 +96,41 @@ describe('runScoutTurn', () => {
     expect(events).toEqual([{ type: 'error', message: expect.any(String), cause: error }]);
   });
 
+  it('streams application events while an interactive tool is still executing', async () => {
+    const model = new ScriptedModel([
+      {
+        content: '',
+        toolCalls: [{ id: 'choice-1', name: 'ask_choice', args: { prompt: 'Tea or coffee?' } }],
+      },
+      { content: 'Tea selected.', toolCalls: [] },
+    ], ['Tea selected.']);
+    const tool: ScoutTool<Record<string, never>, { type: 'card' | 'card_closed'; id: string }> = {
+      definition: { name: 'ask_choice', inputSchema: { type: 'object' } },
+      async *execute() {
+        yield { type: 'card', id: 'card-1' };
+        await Promise.resolve();
+        yield { type: 'card_closed', id: 'card-1' };
+        return { content: { answer: 'tea' } };
+      },
+    };
+
+    const events = [];
+    for await (const event of runScoutTurn({
+      model,
+      messages: [],
+      tools: [tool],
+      context: {},
+    })) events.push(event);
+
+    expect(events).toEqual([
+      { type: 'tool_start', name: 'ask_choice', callId: 'choice-1' },
+      { type: 'app', event: { type: 'card', id: 'card-1' } },
+      { type: 'app', event: { type: 'card_closed', id: 'card-1' } },
+      { type: 'token', content: 'Tea selected.' },
+      { type: 'done' },
+    ]);
+  });
+
   it('ends with a typed error when the model never exits tool mode', async () => {
     const response = {
       content: '',

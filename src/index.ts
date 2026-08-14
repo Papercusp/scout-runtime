@@ -22,6 +22,7 @@ export type {
   ScoutToolCall,
   ScoutToolChoice,
   ScoutToolDefinition,
+  ScoutToolExecution,
   ScoutToolResult,
   ScoutUsage,
 } from './types.js';

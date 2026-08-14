@@ -5,6 +5,8 @@ import type {
   ScoutRuntimeEvent,
   ScoutTool,
   ScoutToolCall,
+  ScoutToolExecution,
+  ScoutToolResult,
   ScoutUsage,
 } from './types.js';
 
@@ -91,7 +93,20 @@ async function* executeTool<TContext, TAppEvent>(
   let ok = false;
   let content: unknown;
   try {
-    const result = await tool.execute(call.args, options.context, call);
+    const execution = tool.execute(call.args, options.context, call);
+    let result: ScoutToolResult<TAppEvent>;
+    if (isStreamingToolExecution(execution)) {
+      while (true) {
+        const step = await execution.next();
+        if (step.done) {
+          result = step.value;
+          break;
+        }
+        yield { type: 'app', event: step.value };
+      }
+    } else {
+      result = await execution;
+    }
     ok = result.ok ?? true;
     content = result.content;
     for (const event of result.events ?? []) yield { type: 'app', event };
@@ -111,6 +126,15 @@ async function* executeTool<TContext, TAppEvent>(
     toolCallId: call.id,
     toolName: call.name,
   }, options);
+}
+
+function isStreamingToolExecution<TAppEvent>(
+  execution: ScoutToolExecution<TAppEvent>,
+): execution is AsyncGenerator<TAppEvent, ScoutToolResult<TAppEvent>, void> {
+  return typeof execution === 'object'
+    && execution !== null
+    && Symbol.asyncIterator in execution
+    && typeof execution.next === 'function';
 }
 
 async function* streamFinalResponse<TContext, TAppEvent>(
