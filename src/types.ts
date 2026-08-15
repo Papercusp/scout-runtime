@@ -8,6 +8,8 @@ export interface ScoutToolCall {
   id: string;
   name: string;
   args: JsonObject;
+  /** Provider-owned opaque state that must round-trip with this call. */
+  providerMetadata?: JsonObject;
 }
 
 export interface ScoutMessage {

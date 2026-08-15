@@ -148,7 +148,11 @@ function toVertexContents(messages: readonly ScoutMessage[]): {
     const parts: Part[] = [];
     if (message.content) parts.push({ text: message.content });
     for (const call of message.toolCalls ?? []) {
-      parts.push({ functionCall: { id: call.id, name: call.name, args: call.args } });
+      const thoughtSignature = call.providerMetadata?.thoughtSignature;
+      parts.push({
+        functionCall: { id: call.id, name: call.name, args: call.args },
+        ...(typeof thoughtSignature === 'string' ? { thoughtSignature } : {}),
+      });
     }
     if (parts.length > 0) {
       contents.push({ role: message.role === 'assistant' ? 'model' : 'user', parts });
@@ -159,9 +163,12 @@ function toVertexContents(messages: readonly ScoutMessage[]): {
 
 function normalizeResponse(response: GenerateContentResponse, model: string): ScoutModelResponse {
   const usage = normalizeUsage(response, model);
+  const parts = response.candidates?.[0]?.content?.parts ?? [];
   return {
-    content: response.text ?? '',
-    toolCalls: (response.functionCalls ?? []).map((call, index) => normalizeFunctionCall(call, index)),
+    content: parts.length > 0
+      ? parts.map((part) => part.text ?? '').join('')
+      : response.text ?? '',
+    toolCalls: normalizeFunctionCalls(response, parts),
     ...(usage ? { usage } : {}),
     ...(response.candidates?.[0]?.finishReason
       ? { finishReason: String(response.candidates[0].finishReason) }
@@ -169,11 +176,32 @@ function normalizeResponse(response: GenerateContentResponse, model: string): Sc
   };
 }
 
-function normalizeFunctionCall(call: FunctionCall, index: number): ScoutToolCall {
+function normalizeFunctionCalls(
+  response: GenerateContentResponse,
+  parts: readonly Part[],
+): ScoutToolCall[] {
+  const signedCalls = parts.flatMap((part) => part.functionCall
+    ? [{ call: part.functionCall, thoughtSignature: part.thoughtSignature }]
+    : []);
+  if (signedCalls.length > 0) {
+    return signedCalls.map(({ call, thoughtSignature }, index) =>
+      normalizeFunctionCall(call, index, thoughtSignature));
+  }
+  return (response.functionCalls ?? []).map((call, index) => normalizeFunctionCall(call, index));
+}
+
+function normalizeFunctionCall(
+  call: FunctionCall,
+  index: number,
+  thoughtSignature?: string,
+): ScoutToolCall {
   return {
     id: call.id ?? `${call.name ?? 'tool'}-${index}`,
     name: call.name ?? 'tool',
     args: asJsonObject(call.args),
+    ...(thoughtSignature
+      ? { providerMetadata: { thoughtSignature } }
+      : {}),
   };
 }
 

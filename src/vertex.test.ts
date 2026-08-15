@@ -10,7 +10,12 @@ function request(): ScoutModelRequest {
       {
         role: 'assistant',
         content: '',
-        toolCalls: [{ id: 'call-1', name: 'search_catalog', args: { query: 'kettle' } }],
+        toolCalls: [{
+          id: 'call-1',
+          name: 'search_catalog',
+          args: { query: 'kettle' },
+          providerMetadata: { thoughtSignature: 'prior-signature' },
+        }],
       },
       {
         role: 'tool',
@@ -38,7 +43,15 @@ describe('VertexGeminiAdapter', () => {
       text: '',
       functionCalls: [{ id: 'next', name: 'search_catalog', args: { query: 'electric kettle' } }],
       usageMetadata: { promptTokenCount: 12, candidatesTokenCount: 3, totalTokenCount: 15 },
-      candidates: [{ finishReason: 'STOP' }],
+      candidates: [{
+        finishReason: 'STOP',
+        content: {
+          parts: [{
+            functionCall: { id: 'next', name: 'search_catalog', args: { query: 'electric kettle' } },
+            thoughtSignature: 'next-signature',
+          }],
+        },
+      }],
     });
     const adapter = new VertexGeminiAdapter({
       model: 'gemini-test',
@@ -54,7 +67,12 @@ describe('VertexGeminiAdapter', () => {
 
     await expect(adapter.complete(request())).resolves.toEqual({
       content: '',
-      toolCalls: [{ id: 'next', name: 'search_catalog', args: { query: 'electric kettle' } }],
+      toolCalls: [{
+        id: 'next',
+        name: 'search_catalog',
+        args: { query: 'electric kettle' },
+        providerMetadata: { thoughtSignature: 'next-signature' },
+      }],
       usage: { model: 'gemini-test', promptTokens: 12, completionTokens: 3, totalTokens: 15 },
       finishReason: 'STOP',
     });
@@ -70,7 +88,13 @@ describe('VertexGeminiAdapter', () => {
         }],
       }),
       contents: expect.arrayContaining([
-        expect.objectContaining({ role: 'model' }),
+        expect.objectContaining({
+          role: 'model',
+          parts: [expect.objectContaining({
+            thoughtSignature: 'prior-signature',
+            functionCall: expect.objectContaining({ id: 'call-1', name: 'search_catalog' }),
+          })],
+        }),
         expect.objectContaining({
           role: 'user',
           parts: [expect.objectContaining({
