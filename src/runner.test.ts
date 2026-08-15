@@ -76,6 +76,10 @@ describe('runScoutTurn', () => {
     });
     expect(messages.at(-1)).toEqual({ role: 'assistant', content: 'I found one.' });
     expect(model.streamedRequests[0]?.toolChoice).toBe('none');
+    expect(model.streamedRequests[0]?.messages.at(-1)).toEqual({
+      role: 'user',
+      content: 'The required tool results are complete. Answer the original user request in plain text using only those results. Do not call tools.',
+    });
     expect(onUsage).toHaveBeenCalledTimes(1);
     expect(onTool).toHaveBeenCalledWith(expect.objectContaining({ ok: true }), { seller: 'demo' });
   });

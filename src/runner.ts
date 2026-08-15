@@ -12,6 +12,8 @@ import type {
 
 const DEFAULT_MAX_TOOL_ROUNDS = 6;
 const DEFAULT_ERROR_MESSAGE = 'Sorry, something went wrong. Please try again.';
+const FINAL_RESPONSE_INSTRUCTION =
+  'The required tool results are complete. Answer the original user request in plain text using only those results. Do not call tools.';
 
 export class ScoutToolRoundLimitError extends Error {
   constructor(readonly maxToolRounds: number) {
@@ -141,8 +143,11 @@ async function* streamFinalResponse<TContext, TAppEvent>(
   options: RunScoutTurnOptions<TContext, TAppEvent>,
 ): AsyncGenerator<ScoutRuntimeEvent<TAppEvent>, string> {
   let content = '';
+  const messages = options.messages.some((message) => message.role === 'tool')
+    ? [...options.messages, { role: 'user' as const, content: FINAL_RESPONSE_INSTRUCTION }]
+    : options.messages;
   const stream = options.model.stream({
-    messages: options.messages,
+    messages,
     tools: options.tools.map((tool) => tool.definition),
     toolChoice: 'none',
     ...(options.temperature === undefined ? {} : { temperature: options.temperature }),
