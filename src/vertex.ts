@@ -83,17 +83,18 @@ export class VertexGeminiAdapter implements ScoutModelAdapter {
 
   private toGenerateParams(request: ScoutModelRequest) {
     const { systemInstruction, contents } = toVertexContents(request.messages);
+    const exposesTools = request.toolChoice !== 'none' && request.tools.length > 0;
     const config: GenerateContentConfig = {
       ...(systemInstruction ? { systemInstruction } : {}),
       ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
-      ...(request.tools.length === 0 ? {} : {
+      ...(exposesTools ? {
         tools: [{ functionDeclarations: request.tools.map(toFunctionDeclaration) }],
-      }),
-      toolConfig: {
-        functionCallingConfig: {
-          mode: toFunctionCallingMode(request.toolChoice ?? 'auto'),
+        toolConfig: {
+          functionCallingConfig: {
+            mode: toFunctionCallingMode(request.toolChoice ?? 'auto'),
+          },
         },
-      },
+      } : {}),
       automaticFunctionCalling: { disable: true },
     };
     return {

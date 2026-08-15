@@ -196,5 +196,11 @@ describe('VertexGeminiAdapter', () => {
         usage: { model: 'gemini-test', promptTokens: 8, completionTokens: 2, totalTokens: 10 },
       },
     ]);
+    expect(generateContentStream).toHaveBeenCalledWith(expect.objectContaining({
+      config: expect.not.objectContaining({
+        tools: expect.anything(),
+        toolConfig: expect.anything(),
+      }),
+    }));
   });
 });
