@@ -105,6 +105,73 @@ describe('VertexGeminiAdapter', () => {
     }));
   });
 
+  it('groups every function response from one multi-call model turn into one user content', async () => {
+    const multiCallRequest = request();
+    multiCallRequest.messages = [
+      { role: 'system', content: 'You are Scout.' },
+      { role: 'user', content: 'Find computers.' },
+      {
+        role: 'assistant',
+        content: '',
+        toolCalls: [
+          {
+            id: 'call-laptops',
+            name: 'search_catalog',
+            args: { query: 'laptops' },
+            providerMetadata: { thoughtSignature: 'signature-laptops' },
+          },
+          {
+            id: 'call-desktops',
+            name: 'search_catalog',
+            args: { query: 'desktops' },
+            providerMetadata: { thoughtSignature: 'signature-desktops' },
+          },
+        ],
+      },
+      {
+        role: 'tool',
+        content: '{"products":["Latitude"]}',
+        toolCallId: 'call-laptops',
+        toolName: 'search_catalog',
+      },
+      {
+        role: 'tool',
+        content: '{"products":["OptiPlex"]}',
+        toolCallId: 'call-desktops',
+        toolName: 'search_catalog',
+      },
+    ];
+    const generateContent = vi.fn().mockResolvedValue({ text: 'Two computers.', candidates: [] });
+    const adapter = new VertexGeminiAdapter({
+      model: 'gemini-test',
+      client: { models: { generateContent } as never },
+    });
+
+    await adapter.complete(multiCallRequest);
+
+    const contents = generateContent.mock.calls[0]?.[0]?.contents;
+    expect(contents).toHaveLength(3);
+    expect(contents[2]).toEqual({
+      role: 'user',
+      parts: [
+        {
+          functionResponse: {
+            name: 'search_catalog',
+            id: 'call-laptops',
+            response: { products: ['Latitude'] },
+          },
+        },
+        {
+          functionResponse: {
+            name: 'search_catalog',
+            id: 'call-desktops',
+            response: { products: ['OptiPlex'] },
+          },
+        },
+      ],
+    });
+  });
+
   it('streams text and final usage', async () => {
     async function* chunks() {
       yield { text: 'Harbor ', usageMetadata: undefined };

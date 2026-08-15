@@ -129,21 +129,26 @@ function toVertexContents(messages: readonly ScoutMessage[]): {
     .join('\n\n');
 
   const contents: Content[] = [];
+  let pendingToolParts: Part[] = [];
+  const flushToolParts = () => {
+    if (pendingToolParts.length === 0) return;
+    contents.push({ role: 'user', parts: pendingToolParts });
+    pendingToolParts = [];
+  };
   for (const message of messages) {
     if (message.role === 'system') continue;
     if (message.role === 'tool') {
-      contents.push({
-        role: 'user',
-        parts: [{
-          functionResponse: {
-            name: message.toolName ?? 'tool',
-            ...(message.toolCallId ? { id: message.toolCallId } : {}),
-            response: parseToolResponse(message.content),
-          },
-        }],
+      pendingToolParts.push({
+        functionResponse: {
+          name: message.toolName ?? 'tool',
+          ...(message.toolCallId ? { id: message.toolCallId } : {}),
+          response: parseToolResponse(message.content),
+        },
       });
       continue;
     }
+
+    flushToolParts();
 
     const parts: Part[] = [];
     if (message.content) parts.push({ text: message.content });
@@ -158,6 +163,7 @@ function toVertexContents(messages: readonly ScoutMessage[]): {
       contents.push({ role: message.role === 'assistant' ? 'model' : 'user', parts });
     }
   }
+  flushToolParts();
   return { systemInstruction, contents };
 }
 
