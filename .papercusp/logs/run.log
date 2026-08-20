@@ -1,0 +1,2 @@
+[2026-08-20T05:15:41.015Z] PG bootstrap: connected (search_path=harness_scout_runtime,harness_shared,public); orchestrator running with ctx.pg active
+[2026-08-20T05:15:41.166Z]   prompt-budget role=release-fixer feature=- total=56565 substrate=1305 history=0 playbook=0
