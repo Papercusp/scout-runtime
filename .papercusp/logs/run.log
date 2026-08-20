@@ -12,3 +12,5 @@
 [2026-08-20T08:15:29.357Z]   prompt-budget role=release-fixer feature=- total=56565 substrate=1305 history=0 playbook=0
 [2026-08-20T08:30:28.121Z] invoke-once: received termination signal — aborting agent + unwinding
 [2026-08-20T08:30:28.343Z] invoke release-fixer rc=143 (stdout: /home/marsh-office/papercupai-workspace/scout-runtime/.papercusp/logs/1787213729-release-fixer.out)
+[2026-08-20T09:16:12.794Z] PG bootstrap: connected (search_path=harness_scout_runtime,harness_shared,public); orchestrator running with ctx.pg active
+[2026-08-20T09:16:13.018Z]   prompt-budget role=release-fixer feature=- total=56565 substrate=1305 history=0 playbook=0
